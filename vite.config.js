@@ -15,6 +15,7 @@ import react from '@vitejs/plugin-react'
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  base: '/', // Ensure this is correct for your deployment path
   plugins: [
     react(),
     nodePolyfills({
