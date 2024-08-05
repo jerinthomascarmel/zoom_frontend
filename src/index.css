@@ -19,3 +19,180 @@
   padding: 0;
   box-sizing: border-box;
 }
+
+.profileCard {
+  width: 3rem;
+  height: 3rem;
+  border-radius: 100%;
+  background-color: black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  color: white;
+  font-size: 1rem;
+}
+
+
+.videoContainer{
+  display: flex;
+  flex: 1;
+  height: 80vh;
+  justify-content: space-around;
+  align-items:center;
+  /* background-color: yellow; */
+  flex-wrap: wrap;
+  border-radius: 0.5rem;
+  border: 1px solid black;
+  border-bottom: white;
+}
+
+.chatScreenDiv{
+  width: 25vw;
+  /* background-color: blue; */
+  height: 80vh;
+  border-radius: .5rem;
+  border: 1px solid black;
+  border-bottom: white;
+  border-left: white;
+}
+
+.chatWindow{
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chatWindow .chatHeading{
+  height: 10%;
+  background-color: black;
+  color: white;
+  padding: 1rem;
+  text-align: center;
+}
+
+.chatWindow .chatListContainer{
+  height: 80%;
+  background-color: rgb(242, 242, 242);
+}
+
+.chatWindow .chatInput{
+  height: 10%;
+  padding: 0.6rem;
+  display: flex;
+  align-items: flex-center;
+  justify-content: space-between;
+}
+
+.chatWindow .chatInput input{
+  width:90%;
+
+}
+
+.chatWindow .chatInput span{
+  margin-left: 0.5rem;
+  width: 5%;
+}
+
+.chatWindow .chatListContainer{
+  display: flex;
+  flex-direction: column-reverse;
+  overflow: scroll;
+}
+
+.chatWindow .chatMessageLeft{
+  align-self: flex-start;
+  max-width: 90%;
+  padding: 0 1rem;
+  background-color: black;
+  color: white;
+  margin: 0.5rem;
+  border-radius: 0 0.5rem 0.5rem 0.5rem;
+}
+
+.chatWindow .chatMessageRight{
+  align-self: flex-end;
+  max-width: 90%;
+  padding: 0 1rem;
+  background-color: black;
+  color: white;
+  margin: 0.5rem;
+  border-radius: 0.5rem 0 0.5rem 0.5rem;
+}
+
+.videoElement{
+  object-fit: cover;
+  background-color:black;
+  max-height: 35rem;
+  height:45%;
+  width: 45%;
+  margin-left: 1rem;
+}
+
+.videoControllerDiv{
+  height: 20vh;
+  width: 100vw;
+  position: fixed;
+  bottom: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius:.5rem .5rem 0 0 ;
+  border: 1px solid black;
+  position: relative;
+}
+
+.childCenterController{
+  position: absolute;
+  left: 40%;
+}
+
+.videoChatScreenDiv{
+  display: flex;
+  flex-wrap: wrap;
+  height: 100vh;
+}
+
+#chummaButton{
+  background-color: black;
+  position: fixed;
+  top:0;
+}
+
+#RoundedIcon{
+  border-radius: 100%;
+  background-color: white;
+  height: 3rem;
+  width: 3rem;
+  border: 2px solid black;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-left: 1rem;
+}
+
+.roomListContainer {
+  height: 45vh;
+  width: 100%;
+  overflow: auto; /* Allows scrolling */
+  scrollbar-width: thin; /* Firefox: show a thinner scrollbar */
+  scrollbar-color: #000 #333; /* Firefox: scrollbar color (thumb and track) */
+}
+
+
+.roomListContainer::-webkit-scrollbar {
+  width: 12px; 
+}
+
+.roomListContainer::-webkit-scrollbar-track {
+  background: #333; 
+}
+
+.roomListContainer::-webkit-scrollbar-thumb {
+  background: #000; 
+  border-radius: 6px; 
+}
+
+.roomListContainer::-webkit-scrollbar-thumb:hover {
+  background: #555; 
+}

@@ -8,16 +8,23 @@ import Box from "@mui/material/Box";
 import Grid from "@mui/material/Grid";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
-// import { Snackbar } from "@mui/material";
+import { Snackbar } from "@mui/material";
 import { useState } from "react";
-import { Password } from "@mui/icons-material";
+import useSignIn from "react-auth-kit/hooks/useSignIn";
+import { ClientContext } from "../contexts/clientProvider";
+import { useNavigate } from "react-router-dom";
 
 const defaultTheme = createTheme();
 
+
 export default function AuthPage() {
+  const client = React.useContext(ClientContext);
   let [formState, setFormState] = useState(0);
   let [message, setMessage] = useState("");
   let [error, setError] = useState();
+  let navigate = useNavigate();
+
+  const signIn = useSignIn();
 
   const [inputValue, setInputValue] = useState({
     name: "",
@@ -36,9 +43,62 @@ export default function AuthPage() {
     });
   };
 
-  const handleSubmit = async (e) => {
+  const handleLogin = async (e) => {
+    setError("");
     e.preventDefault();
-    console.log(inputValue);
+    try {
+      let response = await client.post("/users/login", {
+        username: username,
+        password: password,
+      });
+
+      const result = signIn({
+        auth: {
+          token: response.data.token,
+          type: "Bearer",
+        },
+        userState: { username: username },
+      });
+
+      if (result) {
+        setOpen(true);
+        setMessage("User logged in!");
+        navigate("/");
+      } else {
+        setError("Login failed");
+      }
+    } catch (err) {
+      console.dir(err);
+      if (!err.response) setError(err.message);
+      if (err.response) setError(err.response.data.message);
+    }
+
+    setInputValue({
+      name: "",
+      username: "",
+      password: "",
+    });
+  };
+
+  const handleRegister = async (e) => {
+    setError("");
+    e.preventDefault();
+    try {
+      let response = await client.post("/users/register", {
+        name: name,
+        username: username,
+        password: password,
+      });
+
+      setOpen(true);
+      setMessage(response.data.message);
+      setFormState(0);
+    } catch (err) {
+      console.dir(err);
+      if (err.response) setError(err.response.data.message);
+      if (!err.response) setError(err.message);
+    }
+
     setInputValue({
       name: "",
       username: "",
@@ -134,14 +194,14 @@ export default function AuthPage() {
                 onChange={handleOnChange}
               />
 
-              {/* <p style={{ color: "red" }}>{error}</p> */}
+              <p style={{ color: "red" }}>{error}</p>
 
               <Button
                 type="button"
                 fullWidth
                 variant="contained"
                 sx={{ mt: 3, mb: 2 }}
-                onClick={handleSubmit}
+                onClick={formState == 0 ? handleLogin : handleRegister}
               >
                 {formState == 0 ? "Login" : "Sign Up"}
               </Button>
@@ -150,7 +210,7 @@ export default function AuthPage() {
         </Grid>
       </Grid>
 
-      {/* <Snackbar open={open} autoHideDuration={4000} message={message} /> */}
+      <Snackbar open={open} autoHideDuration={4000} message={message} />
     </ThemeProvider>
   );
 }

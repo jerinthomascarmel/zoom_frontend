@@ -1,157 +1,317 @@
 import React, { useEffect, useRef, useState } from "react";
 import SimplePeer from "simple-peer";
 import { io } from "socket.io-client";
-import { TextField, Button } from "@mui/material";
+import { Button } from "@mui/material";
+import VideoCard from "./components/VideoCard";
+import Navbar from "./components/Navbar.jsx";
+import VideocamIcon from "@mui/icons-material/Videocam";
+import VideocamOffIcon from "@mui/icons-material/VideocamOff";
+import MicIcon from "@mui/icons-material/Mic";
+import MicOffIcon from "@mui/icons-material/MicOff";
+import RoundedIcon from "./components/RoundedIcon.jsx";
+import ChatIcon from "@mui/icons-material/Chat";
+import CallEndIcon from "@mui/icons-material/CallEnd";
+import GroupsIcon from "@mui/icons-material/Groups";
+import ChatScreen from "./components/ChatScreen.jsx";
+import { useParams } from "react-router-dom";
 
-const socket = io("https://zoom-backend-u8q7.onrender.com");
-// const socket = io("http://localhost:8080");
+const BASEURL = import.meta.env.VITE_BASE_URL;
+const socket = io(BASEURL);
 
 function VideoCallPage() {
-  const [roomId, setRoomId] = useState("");
+  const { roomid } = useParams();
   const myVideoRef = useRef();
-  const [peerVideos, setPeerVideos] = useState([]);
-  const remoteVideoRef = useRef();
-  const [callerId, setCallerId] = useState("");
-  const [newJoineeId, setNewJoineeId] = useState("");
-
+  const secondaryVideoRef = useRef();
   const [peers, setPeers] = useState([]);
+  const peersRef = useRef([]);
+  const [isJoined, setIsJoined] = useState(false);
+  const [videoEnabled, setVideoEnabled] = useState(true);
+  const [audioEnabled, setAudioEnabled] = useState(true);
+  const [isChatOpened, setIsChatOpened] = useState(false);
+  const streamRef = useRef();
+  const isStreamReady = useRef(false);
 
   useEffect(() => {
-    navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
-      .then((stream) => {
-        myVideoRef.current.srcObject = stream;
-
-        socket.on("user-connected", (userId) => {
-          console.log("User connected: ", userId);
-
-          const peer = new SimplePeer({
-            initiator: true,
-            trickle: false,
-            stream,
-          });
-
-          // connectionRef.current = peer;
-          setPeers((peers) => [...peers, { conn: peer, userid: userId }]);
-
-          peer.on("signal", (data) => {
-            socket.emit("callNewUser", {
-              to: userId,
-              from: socket.id,
-              signal: data,
-            });
-
-            console.log("call new user !");
-          });
-
-          peer.on("stream", (stream) => {
-            console.log("stream recieved ! ");
-            remoteVideoRef.current.srcObject = stream;
-            createVideoElement(stream);
-            setCallerId("");
-          });
-
-          socket.on("answerCall", (data) => {
-            console.log("answered call from new user");
-            // const peerList = peers.filter(
-            //   (peerObj) => peerObj.userid == data.from
-            // );
-            peer.signal(data.signal);
-          });
+    console.log("me :", socket.id);
+    const getMediaStream = async () => {
+      isStreamReady.current = false;
+      try {
+        const newStream = await navigator.mediaDevices.getUserMedia({
+          video: true,
+          audio: true,
         });
+        streamRef.current = newStream;
+        myVideoRef.current.srcObject = newStream;
+        secondaryVideoRef.current.srcObject = newStream;
+        isStreamReady.current = true;
+      } catch (err) {
+        console.error("Error getting media stream:", err);
+      }
+    };
 
-        return () => {
-          socket.off("user-connected");
-          socket.off("signal");
-        };
-      });
+    getMediaStream();
+
+    socket.on("user-disconnected", (userId) => {
+      console.log("called user-disconnected ! ");
+      // Remove from peersRef
+      peersRef.current = peersRef.current.filter(
+        (peer) => peer.userid !== userId
+      );
+
+      // Update the peers state
+      setPeers((prevPeers) =>
+        prevPeers.filter((peer) => peer.userid !== userId)
+      );
+    });
+
+    window.addEventListener("beforeunload", endCall);
+
+    return () => {
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+      }
+      socket.emit("leave-room", roomid);
+    };
   }, []);
 
-  const joinRoom = () => {
-    console.log("Joining room: ", roomId);
-    socket.emit("join-room", roomId);
+  const endCall = () => {
+    console.log("end call is called ! ");
+    // Destroy all peers
+    peersRef.current.forEach(({ conn }) => {
+      conn.destroy();
+    });
 
-    navigator.mediaDevices
-      .getUserMedia({ video: true, audio: true })
-      .then((stream) => {
-        socket.on("callNewUser", (data) => {
-          const fromUser = data.from;
-          console.log("called by existing user ! ");
+    // Clear peersRef and peers state
+    peersRef.current = [];
+    setPeers([]);
 
-          const peer = new SimplePeer({
-            initiator: false,
-            trickle: false,
-            stream: stream,
-          });
+    // Notify the server that the call has ended
+    socket.emit("leave-room", roomid);
 
-          // connectionRef.current = peer;
-          setPeers((peers) => [...peers, { conn: peer, userid: data.from }]);
+    // Optionally, update the UI or redirect the user
+    setIsJoined(false);
 
-          peer.on("signal", (data) => {
-            console.log("emit signal back to existing user ! ");
-            socket.emit("answerCall", {
-              to: fromUser,
-              from: socket.id,
-              signal: data,
-            });
-          });
-
-          peer.on("stream", (stream) => {
-            console.log("Stream received");
-            remoteVideoRef.current.srcObject = stream;
-            createVideoElement(stream);
-            setCallerId("");
-          });
-
-          peer.signal(data.signal);
-        });
-      });
+    if (myVideoRef.current) myVideoRef.current.srcObject = streamRef.current;
+    if (secondaryVideoRef.current)
+      secondaryVideoRef.current.srcObject = streamRef.current;
   };
 
-  const createRoom = () => {
-    console.log("Creating room: ", roomId);
-    socket.emit("join-room", roomId);
+  const handleVideoEnable = () => {
+    const videoTrack = streamRef.current.getVideoTracks()[0];
+    videoTrack.enabled = !videoTrack.enabled;
+    setVideoEnabled(videoTrack.enabled);
+  };
+
+  const handleAudioEnable = () => {
+    const audioTrack = streamRef.current.getAudioTracks()[0];
+    audioTrack.enabled = !audioTrack.enabled;
+    setAudioEnabled(audioTrack.enabled);
+  };
+
+  const joinRoom = () => {
+    //check isStreamReady
+    if (!isStreamReady.current) {
+      console.log("media devices is not ready to join room !");
+      return;
+    }
+
+    setIsJoined(true);
+    socket.emit("join-room", roomid);
+    console.log("Joining room: ", roomid);
+
+    //for new user joins !
+    socket.on("callNewUser", (data) => {
+      console.log("calling you (new user) : by ", data.from);
+      const fromUser = data.from;
+      const peer = addPeer(fromUser, streamRef.current, data);
+      console.log(peersRef);
+    });
+
+    //for existing user !
+    socket.on("user-connected", (userId) => {
+      console.log("User connected: ", userId);
+
+      const peer = createPeer(userId, streamRef.current);
+    });
+
+    socket.on("answerCall", (data) => {
+      let peer = peersRef.current.find((peer) => peer.userid == data.from);
+      if (!peer) return;
+      peer.conn.signal(data.signal);
+    });
+  };
+
+  const createPeer = (userId, stream) => {
+    const peer = new SimplePeer({
+      initiator: true,
+      trickle: false,
+      stream,
+    });
+
+    peersRef.current.push({ conn: peer, userid: userId });
+    setPeers((peers) => [...peers, { conn: peer, userid: userId }]);
+
+    peer.on("stream", (stream) => {
+      setPeers((prevPeers) => {
+        const newPeers = prevPeers.map((p) => {
+          return p.userid === userId ? { ...p, stream } : p;
+        });
+        return newPeers;
+      });
+    });
+
+    peer.on("signal", (data) => {
+      // if (data.renegotiate || data.transceiverRequest) return;
+      socket.emit("callNewUser", {
+        to: userId,
+        from: socket.id,
+        signal: data,
+      });
+
+      console.log("call new user !");
+    });
+
+    peer.on("error", (err) => {
+      console.log(err);
+    });
+
+    
+    return peer;
+  };
+
+  const addPeer = (fromUser, stream, data) => {
+    const peer = new SimplePeer({
+      initiator: false,
+      trickle: false,
+      stream: stream,
+    });
+
+    peersRef.current.push({ conn: peer, userid: fromUser });
+    setPeers((peers) => [...peers, { conn: peer, userid: fromUser }]);
+
+    peer.on("stream", (stream) => {
+      setPeers((prevPeers) => {
+        const newPeers = prevPeers.map((p) => {
+          return p.userid === fromUser ? { ...p, stream } : p;
+        });
+        return newPeers;
+      });
+    });
+
+    peer.on("signal", (data) => {
+      socket.emit("answerCall", {
+        to: fromUser,
+        from: socket.id,
+        signal: data,
+      });
+    });
+
+    peer.on("error", (err) => {
+      console.log(err);
+    });
+
+    peer.signal(data.signal);
+    return peer;
   };
 
   return (
     <div>
-      <TextField
-        id="outlined-basic"
-        label="Room"
-        variant="outlined"
-        value={roomId}
-        onChange={(e) => setRoomId(e.target.value)}
-      />
-      <Button variant="contained" onClick={createRoom}>
-        Create Room
-      </Button>
-      <Button variant="contained" onClick={joinRoom}>
-        Join Room
-      </Button>
-      <video ref={myVideoRef} autoPlay playsInline />
-      <video ref={remoteVideoRef} autoPlay playsInline />
-      <div id="videoContainer"></div>
+      {!isJoined && <Navbar />}
+      <div
+        className="container p-5"
+        style={{ display: isJoined ? "none" : "" }}
+      >
+        <div className="row ">
+          <div className="col-8 p-5" style={{ height: "70vh" }}>
+            <video
+              ref={myVideoRef}
+              autoPlay
+              playsInline
+              className="w-100 h-100 rounded"
+              style={{ objectFit: "cover", backgroundColor: "black" }}
+            />
+          </div>
+          <div className="col text-center mt-auto mb-auto">
+            <h1>Ready to join ?</h1>
+            <p>No one else is here !</p>
+            <Button
+              variant="contained"
+              onClick={joinRoom}
+              style={{ backgroundColor: "black", borderRadius: "0.5rem" }}
+            >
+              Join Room
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className="videoChatScreenDiv"
+        style={{ display: isJoined ? "" : "none" }}
+      >
+        <div className="videoContainer">
+          <video
+            ref={secondaryVideoRef}
+            autoPlay
+            playsInline
+            className="videoElement"
+          />
+          {peers &&
+            peers.map((peer) => {
+              return <VideoCard key={peer.userid} peer={peer} />;
+            })}
+        </div>
+        {isChatOpened && (
+          <div className="chatScreenDiv">
+            <ChatScreen socket={socket} />
+          </div>
+        )}
+        <div className="videoControllerDiv">
+          <div className="p-5 fs-5">
+            <GroupsIcon style={{ fontSize: "2rem", marginRight: "1rem" }} />
+            {roomid}
+          </div>
+          <div
+            className="p-5 childCenterController"
+            style={{ display: "flex" }}
+          >
+            {videoEnabled ? (
+              <RoundedIcon
+                icon={<VideocamIcon />}
+                onClick={handleVideoEnable}
+              />
+            ) : (
+              <RoundedIcon
+                icon={<VideocamOffIcon />}
+                onClick={handleVideoEnable}
+              />
+            )}
+
+            {audioEnabled ? (
+              <RoundedIcon icon={<MicIcon />} onClick={handleAudioEnable} />
+            ) : (
+              <RoundedIcon icon={<MicOffIcon />} onClick={handleAudioEnable} />
+            )}
+            <RoundedIcon
+              icon={<CallEndIcon />}
+              color={"red"}
+              onClick={endCall}
+            />
+          </div>
+          <div className="p-5">
+            <RoundedIcon
+              icon={<ChatIcon />}
+              onClick={() =>
+                setIsChatOpened((prev) => {
+                  return !prev;
+                })
+              }
+            />
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
 
 export default VideoCallPage;
-
-const createVideoElement = (stream) => {
-  console.log("Creating video element!");
-  const videoContainer = document.querySelector("#videoContainer");
-  console.log("Video tracks:", stream.getVideoTracks());
-  if (videoContainer) {
-    let newVideo = document.createElement("video");
-    newVideo.srcObject = stream;
-    newVideo.autoPlay = true; // Ensure video plays automatically
-    newVideo.playsInline = true; // For mobile browsers to play inline
-    newVideo.style.width = "300px"; // Set width
-    newVideo.style.height = "200px"; // Set height
-    newVideo.style.margin = "10px"; // Optional: Add some spacing
-
-    videoContainer.appendChild(newVideo);
-  } else {
-    console.error("Video container not found!");
-  }
-};

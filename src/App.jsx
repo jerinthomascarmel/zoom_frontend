@@ -1,18 +1,33 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./App.css";
-import LandingPage from "./pages/LandingPage";
-import AuthPage from "./pages/Auth/AuthPage";
-import VideoCallPage from "./pages/VideoCallPage";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
+import WrapperNavBar from "./pages/WrapperNavBar";
+import ProtectedRoute from "./pages/ProtectRoomRoute";
+import AuthProvider from "react-auth-kit";
+import createStore from "react-auth-kit/createStore";
+import AuthOutlet from "@auth-kit/react-router/AuthOutlet";
+import { ClientProvider } from "./contexts/clientProvider";
+
+const store = createStore({
+  authName: "_auth",
+  authType: "cookie",
+  cookieDomain: window.location.hostname,
+  cookieSecure: window.location.protocol === "https:",
+});
 
 function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/videocall" element={<VideoCallPage />} />
-      </Routes>
-    </BrowserRouter>
+    <AuthProvider store={store}>
+      <ClientProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route element={<AuthOutlet fallbackPath="/auth" />}>
+              <Route path="/room/:roomid" element={<ProtectedRoute />} />
+            </Route>
+            <Route path="/*" element={<WrapperNavBar />} />
+          </Routes>
+        </BrowserRouter>
+      </ClientProvider>
+    </AuthProvider>
   );
 }
 
