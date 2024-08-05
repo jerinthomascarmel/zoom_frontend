@@ -48,7 +48,7 @@ function GetRoomPage() {
                       {meeting.date}
                     </div>
                     <Link
-                      className="badge text-bg-primary rounded-pill"
+                      className="badge text-bg-dark rounded-pill"
                       to={to}
                     >
                       <NavigateNextRoundedIcon />
