@@ -16,7 +16,7 @@ class ActionProvider {
 
 
         const GROQ_API_KEY = import.meta.env.VITE_GROQ_KEY;
-        
+
         const prompt = `
             You are an AI assistant specialized in summarizing and answering questions based on meeting transcripts.
             Don't say you are given with transcripts, just say that was discussed in the meeting
@@ -26,7 +26,6 @@ class ActionProvider {
             ${this.transcripts || "this meetings has no information"}
 
             
-
             User Question: ${userInput}
 
             Answer:

@@ -24,7 +24,7 @@ function GetRoomPage() {
         let response = await client.post("/users/get_all_activity", {
           user_id: auth.username,
         });
-        console.log(response);
+        
         setMeetings(response.data.rooms);
         setShowChats(Array(response.data.rooms.length).fill(false));
       } catch (err) {
