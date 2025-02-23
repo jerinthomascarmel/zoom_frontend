@@ -1,7 +1,10 @@
 import { createContext } from "react";
 import axios from "axios";
-const BASEURL = import.meta.env.VITE_BASE_URL;
 
+const BASEURL =
+  import.meta.env.MODE === "production"
+    ? import.meta.env.VITE_BASE_URL_PROD
+    : import.meta.env.VITE_BASE_URL; 
 
 const client = axios.create({
   baseURL: BASEURL,

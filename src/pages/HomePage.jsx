@@ -14,6 +14,7 @@ function HomePage() {
   const [error, setError] = useState("");
   const isAuthenticated = useIsAuthenticated();
 
+  
   const createMeeting = async () => {
     setError("");
     if (!isAuthenticated) {
@@ -32,7 +33,9 @@ function HomePage() {
       }
 
       console.log(response.data);
-    } catch (e) {}
+    } catch (e) {
+
+    }
   };
 
   const joinMeeting = async () => {

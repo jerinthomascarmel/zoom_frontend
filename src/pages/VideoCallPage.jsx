@@ -15,7 +15,11 @@ import GroupsIcon from "@mui/icons-material/Groups";
 import ChatScreen from "./components/ChatScreen.jsx";
 import { useParams } from "react-router-dom";
 
-const BASEURL = import.meta.env.VITE_BASE_URL;
+const BASEURL =
+  import.meta.env.MODE === "production"
+    ? import.meta.env.VITE_BASE_URL_PROD
+    : import.meta.env.VITE_BASE_URL;
+
 const socket = io(BASEURL);
 
 function VideoCallPage() {
@@ -91,8 +95,8 @@ function VideoCallPage() {
       for (let i = event.resultIndex; i < event.results.length; i++) {
         finalTranscript += event.results[i][0].transcript;
       }
-    
-      console.log('speak is:',finalTranscript);
+
+      console.log("speak is:", finalTranscript);
       socket.emit("on-speak", {
         role: socket.id,
         message: finalTranscript,

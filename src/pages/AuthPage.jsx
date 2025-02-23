@@ -16,7 +16,6 @@ import { useNavigate } from "react-router-dom";
 
 const defaultTheme = createTheme();
 
-
 export default function AuthPage() {
   const client = React.useContext(ClientContext);
   let [formState, setFormState] = useState(0);
@@ -44,6 +43,7 @@ export default function AuthPage() {
   };
 
   const handleLogin = async (e) => {
+    console.dir(client);  
     setError("");
     e.preventDefault();
     try {
