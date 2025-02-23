@@ -4,10 +4,19 @@ import useAuthUser from "react-auth-kit/hooks/useAuthUser";
 import NavigateNextRoundedIcon from "@mui/icons-material/NavigateNextRounded";
 import { Link } from "react-router-dom";
 
+import config from "./components/ChatBot/chatbotConfig";
+import MessageParser from "./components/ChatBot/MessageParser";
+import ActionProvider from "./components/ChatBot/ActionProvider";
+import Chatbot from "react-chatbot-kit";
+import "react-chatbot-kit/build/main.css";
+import { Button, Modal } from "react-bootstrap";
+import "./components/ChatBot/ChatBotModal.css";
+
 function GetRoomPage() {
   const client = useContext(ClientContext);
   const [meetings, setMeetings] = useState([]);
   const auth = useAuthUser();
+  const [showChats, setShowChats] = useState([]);
 
   useEffect(() => {
     const fetchMeetings = async () => {
@@ -17,6 +26,7 @@ function GetRoomPage() {
         });
         console.log(response);
         setMeetings(response.data.rooms);
+        setShowChats(Array(response.data.rooms.length).fill(false));
       } catch (err) {
         console.log("error occured ! ");
         console.dir(err);
@@ -47,6 +57,18 @@ function GetRoomPage() {
                       <div className="fw-bold">{meeting.meetingCode}</div>
                       {meeting.date}
                     </div>
+                    <Button
+                      variant="btn btn-outline-success me-1"
+                      onClick={() => {
+                        setShowChats((prevArray) =>
+                          prevArray.map((item, i) =>
+                            i === index ? !item : item
+                          )
+                        );
+                      }}
+                    >
+                      Chat
+                    </Button>
                     <span class="badge badge-secondary bg-primary mt-2 me-1">
                       {auth.username == meeting.user_id ? "created" : "joined"}
                     </span>
@@ -65,6 +87,33 @@ function GetRoomPage() {
           ></img>
         </div>
       </div>
+
+      {meetings &&
+        meetings.map((meeting, index) => {
+          return (
+            <Modal
+              key={index}
+              show={showChats[index]}
+              onHide={() =>
+                setShowChats((prevArray) =>
+                  prevArray.map((item, i) => (i === index ? !item : item))
+                )
+              }
+            >
+              <Modal.Header closeButton>
+                <Modal.Title>ChatBot</Modal.Title>
+              </Modal.Header>
+              <Modal.Body>
+                <Chatbot
+                  config={config}
+                  messageParser={MessageParser}
+                  actionProvider={ActionProvider}
+                  transcripts={meeting.transcripts}
+                />
+              </Modal.Body>
+            </Modal>
+          );
+        })}
     </div>
   );
 }

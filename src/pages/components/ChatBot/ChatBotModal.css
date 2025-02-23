@@ -1,0 +1,11 @@
+/* ChatBotModal.css */
+.react-chatbot-kit-chat-container {
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  max-height: none !important;
+}
+
+.react-chatbot-kit-chat-message-container {
+  height: calc(100% - 120px) !important; /* Adjust based on header and input height */
+}
