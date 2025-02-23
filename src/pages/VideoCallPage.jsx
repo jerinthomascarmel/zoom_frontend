@@ -44,6 +44,7 @@ function VideoCallPage() {
         myVideoRef.current.srcObject = newStream;
         secondaryVideoRef.current.srcObject = newStream;
         isStreamReady.current = true;
+        startTranscription(newStream);
       } catch (err) {
         console.error("Error getting media stream:", err);
       }
@@ -73,6 +74,38 @@ function VideoCallPage() {
       socket.emit("leave-room", roomid);
     };
   }, []);
+
+  const startTranscription = () => {
+    if (!("webkitSpeechRecognition" in window)) {
+      alert("Speech recognition is not supported in this browser.");
+      return;
+    }
+
+    const recognition = new window.webkitSpeechRecognition();
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    recognition.onresult = (event) => {
+      let finalTranscript = "";
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        finalTranscript += event.results[i][0].transcript;
+      }
+    
+      console.log('speak is:',finalTranscript);
+      socket.emit("on-speak", {
+        role: socket.id,
+        message: finalTranscript,
+        roomid,
+      });
+    };
+
+    recognition.onerror = (event) => {
+      console.error("Speech recognition error:", event.error);
+    };
+
+    recognition.start();
+  };
 
   const endCall = () => {
     console.log("end call is called ! ");
@@ -175,7 +208,6 @@ function VideoCallPage() {
       console.log(err);
     });
 
-    
     return peer;
   };
 

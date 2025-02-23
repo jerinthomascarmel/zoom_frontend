@@ -47,10 +47,10 @@ function GetRoomPage() {
                       <div className="fw-bold">{meeting.meetingCode}</div>
                       {meeting.date}
                     </div>
-                    <Link
-                      className="badge text-bg-dark rounded-pill"
-                      to={to}
-                    >
+                    <span class="badge badge-secondary bg-primary mt-2 me-1">
+                      {auth.username == meeting.user_id ? "created" : "joined"}
+                    </span>
+                    <Link className="badge text-bg-dark rounded-pill" to={to}>
                       <NavigateNextRoundedIcon />
                     </Link>
                   </li>
